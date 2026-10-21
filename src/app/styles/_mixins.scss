@@ -1,0 +1,12 @@
+@mixin page-container($max-width, $horizontal-space) {
+  margin-inline: auto;
+  max-width: $max-width;
+  padding-inline: $horizontal-space;
+}
+
+@mixin card-surface($radius) {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: $radius;
+  box-shadow: 0 24px 70px rgb(30 41 59 / 8%);
+}

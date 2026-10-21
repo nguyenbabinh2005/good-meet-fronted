@@ -1,0 +1,95 @@
+.panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.participantList {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+}
+
+.participantRow {
+  align-items: center;
+  border-radius: 11px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 38px 1fr auto;
+  padding: 9px;
+
+  &:hover {
+    background: #f7f9fc;
+  }
+
+  > div:nth-child(2) {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  strong {
+    font-size: 0.78rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  div > span {
+    color: #98a2b3;
+    font-size: 0.68rem;
+  }
+}
+
+.smallAvatar {
+  align-items: center;
+  background: var(--avatar-color);
+  border-radius: 50%;
+  color: white;
+  display: inline-flex;
+  font-size: 0.68rem;
+  font-weight: 750;
+  height: 36px;
+  justify-content: center;
+  width: 36px;
+}
+
+.rowActions {
+  align-items: center;
+  display: flex;
+  gap: 2px;
+
+  button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    color: #667085;
+    cursor: pointer;
+    display: inline-flex;
+    height: 28px;
+    justify-content: center;
+    width: 28px;
+
+    &:hover {
+      background: #eef2f7;
+      color: #344054;
+    }
+  }
+}
+
+.danger:hover {
+  background: #fff1f0 !important;
+  color: #b42318 !important;
+}
+
+.micState {
+  align-items: center;
+  color: #98a2b3;
+  display: inline-flex;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}

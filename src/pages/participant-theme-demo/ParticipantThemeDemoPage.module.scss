@@ -1,0 +1,140 @@
+.page {
+  background: #eef3fb;
+  color: #162033;
+  display: grid;
+  gap: 32px;
+  min-height: 100%;
+  padding: clamp(24px, 4vw, 56px);
+}
+
+.page header {
+  display: grid;
+  gap: 8px;
+}
+
+.page header span {
+  color: var(--color-primary);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.page h1,
+.page h2,
+.page p {
+  margin: 0;
+}
+
+.page h1 {
+  font-size: clamp(1.8rem, 4vw, 3rem);
+}
+
+.page h2 {
+  font-size: 1rem;
+  margin-bottom: 14px;
+}
+
+.page p {
+  color: #667085;
+  max-width: 680px;
+}
+
+.themeGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.gridTile {
+  height: 230px;
+}
+
+.sidebarPreview {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 190px));
+}
+
+.sidebarTile {
+  height: 260px;
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: 20px 14px;
+  }
+
+  .themeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebarPreview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.sectionHeader {
+  align-items: flex-end;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+
+  p {
+    color: var(--text-secondary);
+    margin: 6px 0 0;
+  }
+}
+
+.activeSpeakerBadge {
+  align-items: center;
+  background: #d7f0e1;
+  border: 1px solid #91d5ad;
+  border-radius: 999px;
+  color: #0f6b40;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  gap: 6px;
+  padding: 6px 10px;
+  text-transform: uppercase;
+
+  &::before {
+    animation: speaking-indicator 1.2s ease-in-out infinite;
+    background: currentColor;
+    border-radius: 50%;
+    content: '';
+    height: 6px;
+    width: 6px;
+  }
+}
+
+.activeSpeakerPreview {
+  margin-top: 18px;
+  max-width: 720px;
+
+  .gridTile {
+    aspect-ratio: 16 / 9;
+    min-height: 320px;
+  }
+}
+
+@keyframes speaking-indicator {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activeSpeakerBadge::before {
+    animation: none;
+  }
+}
