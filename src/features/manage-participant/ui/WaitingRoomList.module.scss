@@ -1,0 +1,94 @@
+.list {
+  background: transparent;
+  border-bottom: 1px solid #e7ecf3;
+  padding: 12px 14px;
+
+  h3 {
+    color: #344054;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    margin: 0 0 8px;
+    text-transform: uppercase;
+  }
+
+  h3 span {
+    background: var(--color-primary);
+    border-radius: 999px;
+    color: white;
+    padding: 1px 7px;
+  }
+}
+
+.row {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 30px 1fr auto auto;
+  padding: 5px 0;
+
+  strong {
+    font-size: 0.8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  button {
+    align-items: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 700;
+    justify-content: center;
+    padding: 5px 10px;
+    white-space: nowrap;
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.5;
+    }
+  }
+}
+
+.avatar {
+  align-items: center;
+  background: #eef2f7;
+  border-radius: 50%;
+  color: #475467;
+  display: inline-flex;
+  font-size: 0.64rem;
+  font-weight: 800;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.admit {
+  background: #ecfdf3;
+  border-color: #abefc6;
+  color: #067647;
+
+  &:hover:not(:disabled) {
+    background: #d1fadf;
+  }
+}
+
+.reject {
+  background: #fff1f0;
+  border-color: #fecdca;
+  color: #b42318;
+
+  &:hover:not(:disabled) {
+    background: #fee4e2;
+  }
+}
+
+.error {
+  color: #b42318;
+  font-size: 0.74rem;
+  margin: 6px 0 0;
+}

@@ -12,12 +12,11 @@ import { getApiError } from '../../../shared/api/api-error'
 import { Button } from '../../../shared/ui/button'
 import { inviteSchema, type InviteValues } from '../model/invite.schema'
 
-type InvitationsCardProps = { code: string; participantId: string }
+type InvitationsCardProps = { code: string; userId: string }
 
-/** Host-only list of invited emails (the backend stores them; it does not send mail). */
-export const InvitationsCard = ({ code, participantId }: InvitationsCardProps) => {
+export const InvitationsCard = ({ code, userId }: InvitationsCardProps) => {
   const { t } = useTranslation()
-  const invitations = useInvitationsQuery(code, participantId)
+  const invitations = useInvitationsQuery(code, userId)
   const invite = useInviteMutation(code)
   const remove = useRemoveInvitationMutation(code)
   const [requestError, setRequestError] = useState<string>()
@@ -31,7 +30,7 @@ export const InvitationsCard = ({ code, participantId }: InvitationsCardProps) =
   const submit = handleSubmit(async ({ email }) => {
     setRequestError(undefined)
     try {
-      await invite.mutateAsync({ email, participantId })
+      await invite.mutateAsync({ email, userId })
       reset()
     } catch (error) {
       setRequestError(getApiError(error)?.message ?? t('meetingDetail.invitations.error'))
@@ -78,7 +77,7 @@ export const InvitationsCard = ({ code, participantId }: InvitationsCardProps) =
             <button
               aria-label={t('meetingDetail.invitations.remove', { email: item.email })}
               disabled={remove.isPending}
-              onClick={() => remove.mutate({ invitationId: item.id, participantId })}
+              onClick={() => remove.mutate({ invitationId: item.id, userId })}
               type="button"
             >
               <Trash2 size={16} />

@@ -28,26 +28,26 @@ export const useScheduleMeeting = () => {
   return { isPending: mutation.isPending, schedule }
 }
 
-/** Host-only changes to a scheduled meeting. `participantId` is the host's id in that meeting. */
-export const useManageSchedule = (code: string, participantId: string | undefined) => {
+export const useManageSchedule = (code: string) => {
   const dispatch = useAppDispatch()
+  const userId = useAppSelector((state) => state.auth.user?.userId)
   const rescheduleMutation = useRescheduleMeetingMutation()
   const cancelMutation = useCancelMeetingMutation()
 
   const reschedule = async (values: { endAt: string; startAt: string }) => {
-    if (!participantId) throw new Error('Host participant id is unknown')
+    if (!userId) throw new Error('Sign in to change the schedule')
     const meeting = await rescheduleMutation.mutateAsync({
       code,
-      participantId,
       scheduledEndAt: localInputToIso(values.endAt),
       scheduledStartAt: localInputToIso(values.startAt),
+      userId,
     })
     dispatch(meetingSaved(meeting))
   }
 
   const cancel = async () => {
-    if (!participantId) throw new Error('Host participant id is unknown')
-    dispatch(meetingSaved(await cancelMutation.mutateAsync({ code, participantId })))
+    if (!userId) throw new Error('Sign in to cancel the meeting')
+    dispatch(meetingSaved(await cancelMutation.mutateAsync({ code, userId })))
   }
 
   return {

@@ -1,12 +1,13 @@
 import { Mic, MicOff, UserX } from 'lucide-react'
 import type { CSSProperties, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { HandBadge } from '../../../entities/participant/ui/HandBadge'
 import styles from './ParticipantsPanel.module.scss'
 
-/** What the panel needs to know about each person (the page maps LiveKit data into this). */
 export type PanelParticipant = {
   id: string
   initials: string
+  handRaised?: boolean
   isLocal: boolean
   kind: 'guest' | 'host' | 'member'
   microphoneSid?: string
@@ -16,7 +17,6 @@ export type PanelParticipant = {
 }
 
 type ParticipantsPanelProps = {
-  /** Host-only content shown above the list (e.g. the waiting room). */
   children?: ReactNode
   isHost: boolean
   onKick: (participant: PanelParticipant) => void
@@ -46,6 +46,7 @@ export const ParticipantsPanel = ({ children, isHost, onKick, onMute, participan
                 <span>{t(`meetingRoom.kinds.${participant.kind}`)}</span>
               </div>
               <div className={styles.rowActions}>
+                <HandBadge raised={participant.handRaised} />
                 {canModerate && participant.microphoneSid && !participant.muted && (
                   <button
                     aria-label={t('meetingRoom.muteParticipant', { name: participant.name })}

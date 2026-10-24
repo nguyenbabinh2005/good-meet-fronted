@@ -1,0 +1,40 @@
+.wrap {
+  display: flex;
+  position: relative;
+}
+
+.palette {
+  background: white;
+  border: 1px solid #d9e2ee;
+  border-radius: 14px;
+  bottom: calc(100% + 12px);
+  box-shadow: 0 14px 34px rgb(15 23 42 / 16%);
+  display: flex;
+  gap: 2px;
+  left: 50%;
+  padding: 6px;
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 8;
+}
+
+.palette .emoji {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 1.4rem;
+  height: 42px;
+  justify-content: center;
+  min-width: 42px;
+  padding: 0;
+  transition: transform 120ms ease;
+  width: 42px;
+
+  &:hover {
+    background: #f3f6fa;
+    transform: scale(1.15);
+  }
+}

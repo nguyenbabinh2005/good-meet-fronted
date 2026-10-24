@@ -1,0 +1,5 @@
+export { BreakoutBanner } from './ui/BreakoutBanner'
+export { BreakoutPanel } from './ui/BreakoutPanel'
+export { useBreakoutSync } from './model/use-breakout-sync'
+export { useRoomChanges } from './model/use-room-changes'
+export type { AssignableParticipant } from './model/types'

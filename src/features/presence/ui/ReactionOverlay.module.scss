@@ -1,0 +1,64 @@
+.overlay {
+  align-items: flex-end;
+  bottom: 110px;
+  display: flex;
+  gap: 14px;
+  left: 50%;
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 4;
+}
+
+.reaction {
+  align-items: center;
+  animation: float-up 3.5s ease-out forwards;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.emoji {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.name {
+  background: rgb(8 15 27 / 62%);
+  border-radius: 999px;
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 650;
+  max-width: 120px;
+  overflow: hidden;
+  padding: 3px 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes float-up {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.7);
+  }
+
+  12% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-120px) scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reaction {
+    animation: none;
+  }
+}

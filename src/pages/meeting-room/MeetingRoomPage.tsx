@@ -14,6 +14,7 @@ import {
   Users,
   X,
   DoorClosed,
+  LayoutGrid,
 } from 'lucide-react'
 import {
   LiveKitRoom,
@@ -24,16 +25,18 @@ import {
   useLocalParticipant,
   useTracks,
 } from '@livekit/components-react'
-import { ConnectionState, Track } from 'livekit-client'
+import { ConnectionState, DisconnectReason, Track } from 'livekit-client'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../app/store'
 import { useEndMeetingMutation, useEndSessionMutation } from '../../entities/meeting/api/meeting.api'
+import { HandBadge } from '../../entities/participant/ui/HandBadge'
 import { meetingSessionCleared } from '../../entities/meeting/model/meeting-session.slice'
 import { meetingLink } from '../../entities/meeting/model/meeting-status'
 import { meetingSaved } from '../../entities/meeting/model/my-meetings.slice'
 import type { MeetingJoin } from '../../entities/meeting/model/types'
+import { BreakoutBanner, BreakoutPanel, useBreakoutSync, useRoomChanges } from '../../features/breakout'
 import { ChatPanel, useMeetingChat } from '../../features/meeting-chat'
 import { getParticipantVisualTheme } from '../../features/meeting-room/lib/participant-visual-theme'
 import { useSpeakingGlow } from '../../features/meeting-room/lib/use-speaking-glow'
@@ -45,11 +48,20 @@ import {
   useMuteParticipantMutation,
   useWaitingRoom,
   WaitingRoomList,
+  type WaitingRequest,
 } from '../../features/manage-participant'
+import {
+  RaiseHandButton,
+  RaisedHandsList,
+  ReactionOverlay,
+  ReactionPicker,
+  useHands,
+} from '../../features/presence'
 import { useCopyFeedback } from '../../shared/hooks'
 import { initialsOf } from '../../shared/lib/text'
 import styles from './MeetingRoomPage.module.scss'
 import {
+  breakoutCandidates,
   disconnectNoticeKey,
   participantKind,
   toMeetingParticipant,
@@ -58,9 +70,9 @@ import {
   type MeetingParticipant,
 } from './meeting-room.helpers'
 
-type RemoteParticipantTileProps = { meetingParticipant: MeetingParticipant }
+type RemoteParticipantTileProps = { handRaised: boolean; meetingParticipant: MeetingParticipant }
 
-const RemoteParticipantTile = ({ meetingParticipant }: RemoteParticipantTileProps) => {
+const RemoteParticipantTile = ({ handRaised, meetingParticipant }: RemoteParticipantTileProps) => {
   const tileRef = useRef<HTMLElement>(null)
   const isSpeaking = useIsSpeaking(meetingParticipant.participant)
 
@@ -91,15 +103,29 @@ const RemoteParticipantTile = ({ meetingParticipant }: RemoteParticipantTileProp
       </span>
       <div className={participantVisualStyles.remoteMeta}>
         <strong>{meetingParticipant.name}</strong>
+        <HandBadge raised={handRaised} />
         <span>{meetingParticipant.muted ? <MicOff size={14} /> : <Mic size={14} />}</span>
       </div>
     </article>
   )
 }
 
-type MeetingRoomContentProps = { connectionError: string | null; session: MeetingJoin }
+type MeetingRoomContentProps = {
+  chat: ReturnType<typeof useMeetingChat>
+  connectionError: string | null
+  session: MeetingJoin
+  waitingRequests: WaitingRequest[]
+}
 
-const MeetingRoomContent = ({ connectionError, session }: MeetingRoomContentProps) => {
+const MOVE_GRACE_MS = 6_000
+
+const panelTitleKeys = {
+  breakout: 'breakout.title',
+  chat: 'meetingRoom.chat',
+  participants: 'meetingRoom.participants',
+} as const
+
+const MeetingRoomContent = ({ chat, connectionError, session, waitingRequests }: MeetingRoomContentProps) => {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
   const { t } = useTranslation()
@@ -115,16 +141,13 @@ const MeetingRoomContent = ({ connectionError, session }: MeetingRoomContentProp
   const [trackError, setTrackError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [seenIncoming, setSeenIncoming] = useState(0)
+  const [seenIncoming, setSeenIncoming] = useState(chat.incomingCount)
+  const breakoutRoomCount = useAppSelector((state) => state.breakout.rooms.length)
+  const raisedHands = useAppSelector((state) => state.presence.raised)
+  const raisedIds = new Set(raisedHands.map((hand) => hand.participantId))
   const { copied, copy } = useCopyFeedback()
 
   const isHost = session.role === 'HOST'
-  const waitingRequests = useWaitingRoom(session.meetingId, isHost)
-  const chat = useMeetingChat({
-    code: session.publicCode,
-    meetingId: session.meetingId,
-    participantId: session.participantId,
-  })
   const kickMutation = useKickParticipantMutation()
   const muteMutation = useMuteParticipantMutation()
   const endSessionMutation = useEndSessionMutation()
@@ -267,11 +290,15 @@ const MeetingRoomContent = ({ connectionError, session }: MeetingRoomContentProp
       isLocal: participant.isLocal,
       kind: participant.kind,
       microphoneSid: participant.microphoneSid,
+      handRaised: participant.isLocal
+        ? raisedIds.has(session.participantId)
+        : Boolean(participant.participantId && raisedIds.has(participant.participantId)),
       muted: participant.muted,
       name: participant.name,
     }),
   )
   const participantCount = Math.max(participants.length, 1)
+  const assignable = breakoutCandidates(participants)
 
   return (
     <section className={`${styles.room} meeting-room-page`} aria-label={t('meetingRoom.title')}>
@@ -316,6 +343,22 @@ const MeetingRoomContent = ({ connectionError, session }: MeetingRoomContentProp
               </b>
             )}
           </button>
+          {isHost && (
+            <button
+              aria-label={t('breakout.title')}
+              className={panel === 'breakout' ? styles.activeAction : ''}
+              onClick={() => dispatch(panelToggled('breakout'))}
+              type="button"
+            >
+              <LayoutGrid size={18} />
+              <span>{t('breakout.title')}</span>
+              {breakoutRoomCount > 0 && (
+                <b aria-label={t('breakout.roomsBadge', { count: breakoutRoomCount })} className={styles.badge}>
+                  {breakoutRoomCount}
+                </b>
+              )}
+            </button>
+          )}
           <button
             aria-label={t('meetingRoom.chat')}
             className={panel === 'chat' ? styles.activeAction : ''}
@@ -337,6 +380,8 @@ const MeetingRoomContent = ({ connectionError, session }: MeetingRoomContentProp
       </header>
 
       <div className={styles.workspace}>
+        <BreakoutBanner code={session.publicCode} participantId={session.participantId} />
+        <ReactionOverlay meetingId={session.meetingId} />
         {(connectionError || actionError || trackError) && (
           <p className={styles.connectionError} role="alert">
             {connectionError ? t('meetingRoom.connectionError') : (actionError ?? trackError)}
@@ -366,6 +411,7 @@ const MeetingRoomContent = ({ connectionError, session }: MeetingRoomContentProp
               <span>
                 {currentParticipant.name} · {t('meetingRoom.you')}
               </span>
+              <HandBadge raised={raisedIds.has(session.participantId)} />
               {isLocalParticipantSpeaking && (
                 <span className={styles.speaking}>
                   <i /> {t('meetingRoom.speaking')}
@@ -377,7 +423,11 @@ const MeetingRoomContent = ({ connectionError, session }: MeetingRoomContentProp
           {remoteParticipants.length > 0 && (
             <div className={styles.participantStrip}>
               {remoteParticipants.map((participant) => (
-                <RemoteParticipantTile key={participant.id} meetingParticipant={participant} />
+                <RemoteParticipantTile
+                  handRaised={Boolean(participant.participantId && raisedIds.has(participant.participantId))}
+                  key={participant.id}
+                  meetingParticipant={participant}
+                />
               ))}
             </div>
           )}
@@ -413,6 +463,12 @@ const MeetingRoomContent = ({ connectionError, session }: MeetingRoomContentProp
               <MonitorUp size={20} />
               <span>{t('meetingRoom.share')}</span>
             </button>
+            <RaiseHandButton
+              activeClassName={styles.controlActive}
+              code={session.publicCode}
+              participantId={session.participantId}
+            />
+            <ReactionPicker code={session.publicCode} participantId={session.participantId} />
             {isHost && (
               <div className={styles.moreWrap}>
                 <button
@@ -447,7 +503,7 @@ const MeetingRoomContent = ({ connectionError, session }: MeetingRoomContentProp
           <aside className={styles.sidePanel}>
             <div className={styles.panelHeading}>
               <div>
-                <p>{panel === 'chat' ? t('meetingRoom.chat') : t('meetingRoom.participants')}</p>
+                <p>{t(panelTitleKeys[panel])}</p>
                 <span>
                   {participantCount} {t('meetingRoom.inCall')}
                 </span>
@@ -456,7 +512,7 @@ const MeetingRoomContent = ({ connectionError, session }: MeetingRoomContentProp
                 <X size={18} />
               </button>
             </div>
-            {panel === 'chat' ? (
+            {panel === 'chat' && (
               <ChatPanel
                 connected={chat.connected}
                 currentParticipantId={session.participantId}
@@ -466,7 +522,8 @@ const MeetingRoomContent = ({ connectionError, session }: MeetingRoomContentProp
                 onSend={chat.send}
                 sendFailed={chat.sendFailed}
               />
-            ) : (
+            )}
+            {panel === 'participants' && (
               <ParticipantsPanel
                 isHost={isHost}
                 onKick={(participant) => void kickParticipant(participant)}
@@ -474,7 +531,20 @@ const MeetingRoomContent = ({ connectionError, session }: MeetingRoomContentProp
                 participants={panelParticipants}
               >
                 {isHost && <WaitingRoomList hostParticipantId={session.participantId} requests={waitingRequests} />}
+                <RaisedHandsList
+                  code={session.publicCode}
+                  isHost={isHost}
+                  participantId={session.participantId}
+                />
               </ParticipantsPanel>
+            )}
+            {panel === 'breakout' && isHost && (
+              <BreakoutPanel
+                candidates={assignable.candidates}
+                code={session.publicCode}
+                hostParticipantId={session.participantId}
+                unresolved={assignable.unresolved}
+              />
             )}
           </aside>
         )}
@@ -483,16 +553,57 @@ const MeetingRoomContent = ({ connectionError, session }: MeetingRoomContentProp
   )
 }
 
-const MeetingRoomPage = () => {
-  const { meetingId: routeCode = '' } = useParams()
+type ActiveMeetingRoomProps = { session: MeetingJoin }
+
+const ActiveMeetingRoom = ({ session }: ActiveMeetingRoomProps) => {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
-  const session = useAppSelector((state) => state.meetingSession.current)
+  const breakout = useAppSelector((state) => state.meetingSession.breakout)
   const [connectionError, setConnectionError] = useState<string | null>(null)
+  const breakoutRef = useRef(breakout)
+  const moveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const isHost = session.role === 'HOST'
+  const waitingRequests = useWaitingRoom({
+    code: session.publicCode,
+    enabled: isHost,
+    hostParticipantId: session.participantId,
+    meetingId: session.meetingId,
+  })
+  const chat = useMeetingChat({
+    code: session.publicCode,
+    meetingId: session.meetingId,
+    participantId: session.participantId,
+  })
 
-  // After a refresh the in-memory session (and its short-lived token) is gone: go back through the join flow.
-  if (!session || session.publicCode !== routeCode.toLowerCase()) {
-    return <Navigate replace to={`/join?code=${encodeURIComponent(routeCode)}`} />
+  useRoomChanges(session.participantId)
+  useHands({ code: session.publicCode, meetingId: session.meetingId, participantId: session.participantId })
+  useBreakoutSync({
+    code: session.publicCode,
+    enabled: isHost,
+    hostParticipantId: session.participantId,
+    meetingId: session.meetingId,
+  })
+
+  useEffect(() => {
+    breakoutRef.current = breakout
+  })
+
+  useEffect(() => () => clearTimeout(moveTimer.current), [])
+
+  const leaveWithNotice = (notice: string) => {
+    dispatch(meetingSessionCleared())
+    void navigate('/', { replace: true, state: { notice } })
+  }
+
+  const handleDisconnected = (reason?: DisconnectReason) => {
+    const notice = disconnectNoticeKey(reason)
+    if (!notice) return
+    if (breakoutRef.current && reason === DisconnectReason.ROOM_DELETED) {
+      clearTimeout(moveTimer.current)
+      moveTimer.current = setTimeout(() => leaveWithNotice('meetingRoom.notices.ended'), MOVE_GRACE_MS)
+      return
+    }
+    leaveWithNotice(notice)
   }
 
   return (
@@ -501,22 +612,37 @@ const MeetingRoomPage = () => {
       className={styles.liveKitRoot}
       connect
       data-lk-theme="default"
-      onConnected={() => setConnectionError(null)}
-      onDisconnected={(reason) => {
-        const notice = disconnectNoticeKey(reason)
-        if (!notice) return
-        dispatch(meetingSessionCleared())
-        void navigate('/', { replace: true, state: { notice } })
+      key={breakout?.id ?? 'main'}
+      onConnected={() => {
+        clearTimeout(moveTimer.current)
+        setConnectionError(null)
       }}
+      onDisconnected={handleDisconnected}
       onError={(error) => setConnectionError(error.message)}
       serverUrl={session.mediaUrl}
       token={session.mediaToken}
       video={false}
     >
-      <MeetingRoomContent connectionError={connectionError} session={session} />
+      <MeetingRoomContent
+        chat={chat}
+        connectionError={connectionError}
+        session={session}
+        waitingRequests={waitingRequests}
+      />
       <RoomAudioRenderer />
     </LiveKitRoom>
   )
+}
+
+const MeetingRoomPage = () => {
+  const { meetingId: routeCode = '' } = useParams()
+  const session = useAppSelector((state) => state.meetingSession.current)
+
+  if (!session || session.publicCode !== routeCode.toLowerCase()) {
+    return <Navigate replace to={`/join?code=${encodeURIComponent(routeCode)}`} />
+  }
+
+  return <ActiveMeetingRoom session={session} />
 }
 
 export default MeetingRoomPage

@@ -22,7 +22,7 @@ const MeetingDetailPage = () => {
   const user = useAppSelector((state) => state.auth.user)
   const meeting = useAppSelector((state) => state.myMeetings.items.find((item) => item.publicCode === code))
   const { enter, errorKey, isPending: isEntering } = useEnterMeeting()
-  const manage = useManageSchedule(code, meeting?.participantId)
+  const manage = useManageSchedule(code)
   const endMutation = useEndMeetingMutation()
   const codeCopy = useCopyFeedback()
   const linkCopy = useCopyFeedback()
@@ -45,7 +45,7 @@ const MeetingDetailPage = () => {
   const { participantId } = meeting
   const closed = isClosed(meeting.status)
   const scheduled = meeting.status === 'SCHEDULED'
-  const canManage = Boolean(participantId) && !closed
+  const canManage = Boolean(user) && !closed
 
   const run = async (action: () => Promise<unknown>, confirmKey?: string) => {
     setActionError(undefined)
@@ -114,7 +114,7 @@ const MeetingDetailPage = () => {
                 </Button>
               </>
             )}
-            {meeting.status === 'ACTIVE' && canManage && participantId && (
+            {meeting.status === 'ACTIVE' && participantId && (
               <Button
                 disabled={endMutation.isPending}
                 onClick={() =>
@@ -162,10 +162,9 @@ const MeetingDetailPage = () => {
           </div>
         )}
 
-        {!closed && !participantId && <p className="detail-notice">{t('meetingDetail.needsHostId')}</p>}
       </div>
 
-      {canManage && participantId && <InvitationsCard code={code} participantId={participantId} />}
+      {canManage && user && <InvitationsCard code={code} userId={user.userId} />}
     </section>
   )
 }

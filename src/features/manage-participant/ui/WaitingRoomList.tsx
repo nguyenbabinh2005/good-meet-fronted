@@ -1,16 +1,15 @@
-import { Check, X } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { initialsOf } from '../../../shared/lib/text'
 import { useDecideJoinRequestMutation } from '../api/moderation.api'
 import type { WaitingRequest } from '../model/waiting-room'
+import styles from './WaitingRoomList.module.scss'
 
 type WaitingRoomListProps = {
   hostParticipantId: string
   requests: WaitingRequest[]
 }
 
-/** Host-only: people waiting at the door, with approve / reject. */
 export const WaitingRoomList = ({ hostParticipantId, requests }: WaitingRoomListProps) => {
   const { t } = useTranslation()
   const [failed, setFailed] = useState(false)
@@ -28,36 +27,36 @@ export const WaitingRoomList = ({ hostParticipantId, requests }: WaitingRoomList
   if (requests.length === 0) return null
 
   return (
-    <section aria-label={t('meetingRoom.waitingRoom')} className="waiting-list">
+    <section aria-label={t('meetingRoom.waitingRoom')} className={styles.list}>
       <h3>
         {t('meetingRoom.waitingRoom')} <span>{requests.length}</span>
       </h3>
       {requests.map((request) => (
-        <div className="waiting-row" key={request.requestId}>
-          <span className="waiting-avatar">{initialsOf(request.displayName)}</span>
+        <div className={styles.row} key={request.requestId}>
+          <span className={styles.avatar}>{initialsOf(request.displayName)}</span>
           <strong>{request.displayName}</strong>
           <button
-            aria-label={t('meetingRoom.reject', { name: request.displayName })}
-            className="waiting-reject"
-            disabled={decide.isPending}
-            onClick={() => void answer(request.requestId, false)}
-            type="button"
-          >
-            <X size={16} />
-          </button>
-          <button
             aria-label={t('meetingRoom.admit', { name: request.displayName })}
-            className="waiting-admit"
+            className={styles.admit}
             disabled={decide.isPending}
             onClick={() => void answer(request.requestId, true)}
             type="button"
           >
-            <Check size={16} />
+            {t('meetingRoom.admitAction')}
+          </button>
+          <button
+            aria-label={t('meetingRoom.reject', { name: request.displayName })}
+            className={styles.reject}
+            disabled={decide.isPending}
+            onClick={() => void answer(request.requestId, false)}
+            type="button"
+          >
+            {t('meetingRoom.rejectAction')}
           </button>
         </div>
       ))}
       {failed && (
-        <p className="form-error" role="alert">
+        <p className={styles.error} role="alert">
           {t('meetingRoom.decisionFailed')}
         </p>
       )}

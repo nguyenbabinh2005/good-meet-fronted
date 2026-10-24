@@ -2,6 +2,7 @@ import { DisconnectReason, type LocalParticipant } from 'livekit-client'
 import { describe, expect, it, vi } from 'vitest'
 import type { MeetingJoin } from '../../entities/meeting/model/types'
 import {
+  breakoutCandidates,
   disconnectNoticeKey,
   participantKind,
   toMeetingParticipant,
@@ -60,6 +61,7 @@ describe('meeting room participant helpers', () => {
       muted: true,
       name: 'Guest User',
       participant,
+      participantId: '123',
     })
     expect(result.theme).toBeDefined()
   })
@@ -79,7 +81,7 @@ describe('meeting room participant helpers', () => {
       identity: 'user_2',
     } as LocalParticipant)
 
-    expect(result).toMatchObject({ host: true, isLocal: false, kind: 'host' })
+    expect(result).toMatchObject({ host: true, isLocal: false, kind: 'host', participantId: '1' })
   })
 
   it.each([
@@ -116,5 +118,26 @@ describe('disconnectNoticeKey', () => {
   it('explains a closed room and a removed participant', () => {
     expect(disconnectNoticeKey(DisconnectReason.ROOM_DELETED)).toBe('meetingRoom.notices.ended')
     expect(disconnectNoticeKey(DisconnectReason.PARTICIPANT_REMOVED)).toBe('meetingRoom.notices.removed')
+  })
+})
+
+describe('breakoutCandidates', () => {
+  const person = (name: string, participantId: string | undefined, isLocal = false) => ({ isLocal, name, participantId })
+
+  it('lists the other people whose participant id is known', () => {
+    const result = breakoutCandidates([person('Chủ phòng', 'h1', true), person('An', 'p1'), person('Bình', 'p2')] as never[])
+
+    expect(result.candidates).toEqual([
+      { id: 'p1', name: 'An' },
+      { id: 'p2', name: 'Bình' },
+    ])
+    expect(result.unresolved).toEqual([])
+  })
+
+  it('reports people who cannot be identified', () => {
+    const result = breakoutCandidates([person('An', 'p1'), person('Cường', undefined)] as never[])
+
+    expect(result.candidates).toEqual([{ id: 'p1', name: 'An' }])
+    expect(result.unresolved).toEqual(['Cường'])
   })
 })

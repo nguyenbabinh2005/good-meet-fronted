@@ -1,8 +1,8 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { MeetingJoin } from './types'
+import type { BreakoutPlacement, MediaRoomChange, MeetingJoin } from './types'
 
 type MeetingSessionState = {
-  /** The room this browser tab is currently in (kept in memory only: LiveKit tokens are short-lived). */
+  breakout?: BreakoutPlacement
   current?: MeetingJoin
 }
 
@@ -15,9 +15,22 @@ const meetingSessionSlice = createSlice({
     meetingSessionCleared: () => initialState,
     meetingSessionEstablished: (state, action: PayloadAction<MeetingJoin>) => {
       state.current = action.payload
+      state.breakout = undefined
+    },
+    meetingSessionRoomChanged: (state, action: PayloadAction<MediaRoomChange>) => {
+      if (!state.current) return
+      const change = action.payload
+      state.current.mediaUrl = change.mediaUrl
+      state.current.mediaToken = change.mediaToken
+      state.current.mediaTokenExpiresAt = change.mediaTokenExpiresAt
+      state.breakout =
+        change.type === 'BREAKOUT' && change.breakoutRoomId && change.roomName
+          ? { id: change.breakoutRoomId, name: change.roomName }
+          : undefined
     },
   },
 })
 
-export const { meetingSessionCleared, meetingSessionEstablished } = meetingSessionSlice.actions
+export const { meetingSessionCleared, meetingSessionEstablished, meetingSessionRoomChanged } =
+  meetingSessionSlice.actions
 export default meetingSessionSlice.reducer

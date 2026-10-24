@@ -5,6 +5,7 @@ import {
 } from '@livekit/components-core'
 import { DisconnectReason, Track, type LocalParticipant, type Participant } from 'livekit-client'
 import type { MeetingJoin } from '../../entities/meeting/model/types'
+import { participantIdFromIdentity } from '../../entities/participant/model/identity'
 import {
   getParticipantVisualTheme,
   type ParticipantVisualTheme,
@@ -21,15 +22,14 @@ export type MeetingParticipant = {
   isCameraEnabled: boolean
   isLocal: boolean
   kind: ParticipantKind
-  /** Present while the participant has a microphone track: needed to mute it (host action). */
   microphoneSid?: string
   muted: boolean
   name: string
   participant: Participant
+  participantId?: string
   theme: ParticipantVisualTheme
 }
 
-/** The backend names LiveKit identities `user_<id>` / `guest_<participantId>` (SessionService). */
 export const participantKind = (identity: string, host: boolean): ParticipantKind => {
   if (host) return 'host'
   return identity.startsWith('guest_') ? 'guest' : 'member'
@@ -42,7 +42,6 @@ export const toMeetingParticipant = (
 ): MeetingParticipant => {
   const participant = cameraReference.participant
   const isLocal = participant.identity === localParticipant.identity
-  // The backend puts `role` in the LiveKit token attributes (LiveKitMediaRoom.issueToken).
   const host = participant.attributes.role === 'HOST' || (isLocal && meetingSession?.role === 'HOST')
   const name = participant.name || participant.identity
 
@@ -58,6 +57,7 @@ export const toMeetingParticipant = (
     muted: !participant.isMicrophoneEnabled,
     name,
     participant,
+    participantId: participantIdFromIdentity(participant.identity),
     theme: getParticipantVisualTheme(participant.identity, participant.sid),
   }
 }
@@ -79,7 +79,6 @@ export const updateParticipantTrack = async (
   await trackUpdates[track]()
 }
 
-/** Why the media connection closed, as a translation key (none for a normal leave). */
 export const disconnectNoticeKey = (reason?: DisconnectReason) => {
   switch (reason) {
     case undefined:
@@ -93,5 +92,15 @@ export const disconnectNoticeKey = (reason?: DisconnectReason) => {
       return 'meetingRoom.notices.duplicate'
     default:
       return 'meetingRoom.notices.disconnected'
+  }
+}
+
+export const breakoutCandidates = (participants: MeetingParticipant[]) => {
+  const others = participants.filter((participant) => !participant.isLocal)
+  return {
+    candidates: others.flatMap((participant) =>
+      participant.participantId ? [{ id: participant.participantId, name: participant.name }] : [],
+    ),
+    unresolved: others.filter((participant) => !participant.participantId).map((participant) => participant.name),
   }
 }
