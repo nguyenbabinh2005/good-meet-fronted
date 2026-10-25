@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
-export type RoomPanel = 'breakout' | 'chat' | 'participants' | null
+export type RoomPanel = 'breakout' | 'chat' | 'notes' | 'participants' | 'recording' | null
 
 type MeetingRoomUiState = { panel: RoomPanel }
 

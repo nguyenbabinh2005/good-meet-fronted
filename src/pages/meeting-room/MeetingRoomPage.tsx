@@ -10,7 +10,9 @@ import {
   MoreHorizontal,
   Power,
   PhoneOff,
+  Video,
   ShieldCheck,
+  Sparkles,
   Users,
   X,
   DoorClosed,
@@ -57,8 +59,10 @@ import {
   ReactionPicker,
   useHands,
 } from '../../features/presence'
+import { RecordingBadge, RecordingPanel } from '../../features/recording'
 import { useCopyFeedback } from '../../shared/hooks'
 import { initialsOf } from '../../shared/lib/text'
+import { MeetingAiPanel } from '../../widgets/meeting-ai-panel'
 import styles from './MeetingRoomPage.module.scss'
 import {
   breakoutCandidates,
@@ -122,7 +126,9 @@ const MOVE_GRACE_MS = 6_000
 const panelTitleKeys = {
   breakout: 'breakout.title',
   chat: 'meetingRoom.chat',
+  notes: 'meetingAi.title',
   participants: 'meetingRoom.participants',
+  recording: 'recording.title',
 } as const
 
 const MeetingRoomContent = ({ chat, connectionError, session, waitingRequests }: MeetingRoomContentProps) => {
@@ -323,6 +329,7 @@ const MeetingRoomContent = ({ chat, connectionError, session, waitingRequests }:
           <span>
             <i /> {t('meetingRoom.live')}
           </span>
+          <RecordingBadge code={session.publicCode} participantId={session.participantId} />
           <span className={styles.secure}>
             <ShieldCheck size={15} /> {t('meetingRoom.secure')}
           </span>
@@ -372,6 +379,24 @@ const MeetingRoomContent = ({ chat, connectionError, session, waitingRequests }:
                 {unreadMessages}
               </b>
             )}
+          </button>
+          <button
+            aria-label={t('recording.title')}
+            className={panel === 'recording' ? styles.activeAction : ''}
+            onClick={() => dispatch(panelToggled('recording'))}
+            type="button"
+          >
+            <Video size={18} />
+            <span>{t('recording.button')}</span>
+          </button>
+          <button
+            aria-label={t('meetingAi.title')}
+            className={panel === 'notes' ? styles.activeAction : ''}
+            onClick={() => dispatch(panelToggled('notes'))}
+            type="button"
+          >
+            <Sparkles size={18} />
+            <span>{t('meetingAi.button')}</span>
           </button>
           <button aria-label={t('meetingRoom.fullscreen')} onClick={toggleFullscreen} type="button">
             <Maximize2 size={18} />
@@ -522,6 +547,12 @@ const MeetingRoomContent = ({ chat, connectionError, session, waitingRequests }:
                 onSend={chat.send}
                 sendFailed={chat.sendFailed}
               />
+            )}
+            {panel === 'notes' && (
+              <MeetingAiPanel code={session.publicCode} isHost={isHost} participantId={session.participantId} />
+            )}
+            {panel === 'recording' && (
+              <RecordingPanel code={session.publicCode} isHost={isHost} participantId={session.participantId} />
             )}
             {panel === 'participants' && (
               <ParticipantsPanel

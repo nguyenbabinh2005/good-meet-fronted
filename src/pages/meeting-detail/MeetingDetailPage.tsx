@@ -9,6 +9,7 @@ import { meetingSaved } from '../../entities/meeting/model/my-meetings.slice'
 import { useEnterMeeting } from '../../features/join-meeting'
 import { InvitationsCard } from '../../features/manage-invitations'
 import { ScheduleMeetingForm, useManageSchedule } from '../../features/schedule-meeting'
+import { MinutesCard } from '../../features/summary'
 import { getApiError } from '../../shared/api/api-error'
 import { useCopyFeedback } from '../../shared/hooks'
 import { formatDateTime, isoToLocalInput } from '../../shared/lib/date-time'
@@ -165,6 +166,9 @@ const MeetingDetailPage = () => {
       </div>
 
       {canManage && user && <InvitationsCard code={code} userId={user.userId} />}
+      {user && meeting.status !== 'SCHEDULED' && meeting.status !== 'CANCELLED' && (
+        <MinutesCard code={code} userId={user.userId} />
+      )}
     </section>
   )
 }

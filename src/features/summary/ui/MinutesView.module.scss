@@ -1,0 +1,157 @@
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+}
+
+.toolbar {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+
+  select {
+    flex: 1;
+    font-size: 0.78rem;
+    min-width: 0;
+  }
+}
+
+.generate {
+  align-items: center;
+  background: var(--color-primary);
+  border: 0;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  gap: 6px;
+  margin-left: auto;
+  padding: 8px 12px;
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.55;
+  }
+}
+
+.minutes {
+  display: grid;
+  gap: 14px;
+
+  header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  time {
+    color: #98a2b3;
+    font-size: 0.68rem;
+  }
+}
+
+.status {
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 3px 9px;
+}
+
+.COMPLETED {
+  background: #ecfdf3;
+  color: #067647;
+}
+
+.GENERATING {
+  background: #fffaeb;
+  color: #b54708;
+}
+
+.FAILED {
+  background: #fef3f2;
+  color: #b42318;
+}
+
+.section {
+  h3 {
+    color: #344054;
+    font-size: 0.74rem;
+    letter-spacing: 0.04em;
+    margin: 0 0 6px;
+    text-transform: uppercase;
+  }
+
+  p {
+    font-size: 0.82rem;
+    line-height: 1.55;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  ul {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding-left: 18px;
+  }
+
+  li {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  li small {
+    color: #667085;
+    display: block;
+    font-size: 0.7rem;
+  }
+}
+
+.notice {
+  background: #fffaeb;
+  border: 1px solid #fedf89;
+  border-radius: 10px;
+  color: #93370d;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  margin: 0;
+  padding: 8px 10px;
+}
+
+.error {
+  color: #b42318;
+  font-size: 0.74rem;
+  margin: 0;
+}
+
+.empty {
+  align-items: center;
+  color: #98a2b3;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 24px;
+  text-align: center;
+
+  strong {
+    color: #344054;
+    font-size: 0.85rem;
+    margin-top: 12px;
+  }
+
+  span {
+    font-size: 0.72rem;
+    line-height: 1.5;
+    margin-top: 5px;
+  }
+}

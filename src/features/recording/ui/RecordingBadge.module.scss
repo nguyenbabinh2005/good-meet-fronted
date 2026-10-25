@@ -1,0 +1,26 @@
+.badge.badge {
+  align-items: center;
+  background: #fef3f2;
+  border-radius: 999px;
+  color: #b42318;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 800;
+  gap: 6px;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+
+  i {
+    animation: blink 1.2s ease-in-out infinite;
+    background: #d92d20;
+    border-radius: 50%;
+    height: 8px;
+    width: 8px;
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.3;
+  }
+}

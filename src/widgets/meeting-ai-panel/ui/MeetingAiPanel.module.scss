@@ -1,0 +1,20 @@
+.panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.settings {
+  border-bottom: 1px solid #e7ecf3;
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
