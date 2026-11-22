@@ -724,10 +724,12 @@ select {
 .room-form {
   display: grid;
   gap: 15px;
+  grid-template-columns: minmax(0, 1fr);
 }
 .room-field {
   display: grid;
   gap: 8px;
+  min-width: 0;
 }
 .room-field label {
   color: #344054;
@@ -1151,7 +1153,10 @@ select {
 .schedule-times {
   display: grid;
   gap: 15px;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.join-page .room-card:has(.schedule-times) {
+  max-width: 660px;
 }
 .room-input-shell input[type="datetime-local"] {
   min-width: 0;
@@ -1473,7 +1478,7 @@ select {
 
 @media (max-width: vars.$breakpoint-mobile) {
   .schedule-times {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .page-heading {
     flex-direction: column;

@@ -25,7 +25,7 @@ Lệnh khác: `yarn lint`, `yarn typecheck`, `yarn test:ci`, `yarn build`, `yarn
 
 - Đăng ký trả 201 không có body, nên FE đăng nhập ngay sau khi đăng ký để lấy `userId`.
 - Đăng nhập chỉ trả `{ userId }`. FE lưu `{ userId, email, displayName }` ở localStorage (`good-meet.auth`). Tên hiển thị được nhớ theo email lúc đăng ký; đổi được ở trang Cài đặt.
-- Sau khi vào phòng, `participantId` được giữ trong Redux và gửi ở header `X-Participant-Id` cho mọi thao tác trong phòng.
+- Sau khi vào phòng, `participantId` được giữ trong Redux và gửi ở header `X-Participant-Id` cho mọi thao tác trong phòng. Riêng `participantId` của host được nhớ thêm theo từng mã cuộc họp trong localStorage (`good-meet.host-participants.{userId}`) để nút kết thúc cuộc họp ở trang chi tiết dùng được sau khi tải lại trang.
 - Token duy nhất là token LiveKit (`mediaToken`), chỉ nằm trong bộ nhớ.
 
 ## Luồng chính
@@ -37,8 +37,8 @@ Lệnh khác: `yarn lint`, `yarn typecheck`, `yarn test:ci`, `yarn build`, `yarn
 | Chờ chủ phòng duyệt | `/waiting` | STOMP `/topic/join-requests/{requestId}` |
 | Phòng họp | `/meetings/:code` | LiveKit, chat, phòng chờ, kick/mute, kết thúc |
 | Đặt lịch | `/meetings/schedule` | `POST /meetings/scheduled` |
-| Cuộc họp của tôi | `/meetings` | dữ liệu lưu cục bộ |
-| Chi tiết (host) | `/meeting-details/:code` | `PUT .../schedule`, `POST .../cancel`, `POST .../end`, lời mời, biên bản |
+| Cuộc họp của tôi | `/meetings` | `GET /meetings` (`X-User-Id`) |
+| Chi tiết cuộc họp | `/meeting-details/:code` | `GET /meetings/{code}`, `GET /meetings`; host: `PUT .../schedule`, `POST .../cancel`, `POST .../end`, lời mời, biên bản |
 | Đăng nhập / đăng ký | `/login`, `/register` | `POST /auth/login`, `/auth/register` |
 | Ghi hình (trong phòng) | panel "Ghi hình" của `/meetings/:code` | `POST .../recordings`, `POST .../recordings/stop`, `GET .../recordings` |
 | Ghi chú & AI (trong phòng) | panel "AI" của `/meetings/:code` | `PUT .../notes`, `PUT .../assistant`, `GET .../transcripts` |
@@ -62,23 +62,28 @@ Nút **Ghi hình** trên thanh trên của phòng họp mở panel `features/rec
 Nút **AI** trên thanh trên của phòng họp mở panel "Ghi chú & AI" (`widgets/meeting-ai-panel`): host có hai công tắc, mọi người xem được bản ghi lời thoại.
 
 - **Ghi chú (transcript)**: host bật/tắt bằng `PUT /meetings/{code}/notes` (`{ enabled }`). Danh sách bản ghi lấy `GET /meetings/{code}/transcripts` (mọi participant, gồm cả các phiên trước, có vạch ngăn theo phiên) và tự làm mới mỗi 5 giây. Chỉ những câu đã chốt mới có trong danh sách (backend gom theo debounce 2 giây).
-- **Biên bản (summary)**: backend tự tạo biên bản khi phiên kết thúc và có transcript. Biên bản chỉ xem ở thẻ "Biên bản cuộc họp" trong trang chi tiết (host), không có trong phòng. Thẻ gọi `GET /meetings/{code}/minutes` với `X-User-Id`, chọn phiên bản bằng ô chọn, hiển thị tóm tắt, nội dung trao đổi chính, quyết định, phân công công việc, trạng thái `GENERATING` / `COMPLETED` / `FAILED`, tự làm mới mỗi 5 giây. Nút "Tạo biên bản" / "Tạo lại" gọi `POST /meetings/{code}/minutes` (chờ tối đa 90 giây, gọi Gemini); 409 nghĩa là chưa có transcript.
+- **Biên bản (summary)**: backend tự tạo biên bản khi phiên kết thúc và có transcript, mỗi phiên họp đúng một biên bản (không có phiên bản, không tạo lại). Biên bản chỉ xem ở thẻ "Biên bản cuộc họp" trong trang chi tiết (host), không có trong phòng. Thẻ gọi `GET /meetings/{code}/minutes` với `X-User-Id`, mới nhất trước; có nhiều phiên thì chọn theo thời điểm tạo. Hiển thị tóm tắt, nội dung trao đổi chính, quyết định, phân công công việc, trạng thái `GENERATING` / `COMPLETED` / `FAILED`, tự làm mới mỗi 5 giây. Biên bản `FAILED` hiện thông báo lỗi và không thể tạo lại.
 - **Trợ lý AI (assistant)**: host bật/tắt bằng `PUT /meetings/{code}/assistant` (`{ enabled }`). Việc trả lời nằm ở LiveKit Agent phía backend, FE chỉ giữ công tắc.
 
 Giới hạn do backend hiện tại:
 
-1. Backend không có API đọc cờ `notesEnabled` / `assistantEnabled` và không phát sự kiện khi cờ đổi, nên công tắc chỉ hiện cho host. Giá trị ban đầu lấy từ cuộc họp lưu cục bộ (nếu có), sau đó theo phản hồi lần bật/tắt gần nhất trong phiên trình duyệt.
-2. Biên bản chỉ host xem và tạo lại được, xác định bằng `X-User-Id`.
+1. Cờ `notesEnabled` / `assistantEnabled` lấy từ `GET /meetings/{code}` khi vào phòng và cập nhật ngay sau mỗi lần host bật/tắt. Backend không phát sự kiện khi cờ đổi nên công tắc chỉ hiện cho host.
+2. Biên bản chỉ host xem được, xác định bằng `X-User-Id`. Mỗi phiên chỉ có một biên bản nên `POST /meetings/{code}/minutes` trả 409 khi đã có; FE không dùng endpoint này và không có nút tạo biên bản.
 3. Transcript và biên bản chỉ cập nhật bằng polling vì backend không đẩy sự kiện qua WebSocket cho hai module này.
+
+## Danh sách và chi tiết cuộc họp
+
+- **Cuộc họp của tôi** (`/meetings`, và 3 cuộc họp sắp tới ở sảnh): `GET /meetings` với `X-User-Id`, gồm cuộc họp mình chủ trì (`relation: HOST`) và cuộc họp mình được mời theo email tài khoản (`relation: INVITED`). Mỗi dòng có nhãn Chủ trì / Được mời. Bộ lọc Sắp tới / Đã qua chạy phía FE trên danh sách này.
+- **Chi tiết** (`/meeting-details/:code`): `GET /meetings/{code}` không cần header nên khách cũng xem được thông tin. Quyền host (đổi lịch, hủy, lời mời, biên bản, kết thúc) chỉ hiện khi cuộc họp có `relation: HOST` trong danh sách của người dùng.
+- Dữ liệu cuộc họp do TanStack Query giữ; tạo, đặt lịch, đổi lịch, hủy, kết thúc và vào phòng đều làm mới lại các truy vấn `meetings`.
+- Slice Redux `hostParticipants` chỉ giữ `participantId` của host theo mã cuộc họp vì backend vẫn đòi `X-Participant-Id` ở `end` và `end-session`.
 
 ## Giới hạn do backend hiện tại
 
-1. **Không có API liệt kê cuộc họp**: "Cuộc họp của tôi" lưu cục bộ theo `userId` trên trình duyệt đã tạo cuộc họp.
-2. **Không có API xem meeting theo mã**: trạng thái chỉ cập nhật theo phản hồi mà FE nhận được.
-3. **`POST /meetings` và `/meetings/scheduled` không trả `participantId` của host**, trong khi đổi lịch, hủy, lời mời, kết thúc đều cần nó ở `X-Participant-Id`. Hiện chỉ lấy được khi host gọi `/join` (lúc đó meeting chuyển sang `ACTIVE`). FE đã đọc trường `participantId` nếu backend bổ sung vào response tạo/đặt lịch; khi chưa có, trang chi tiết hiển thị thông báo và ẩn các thao tác đó.
-4. Danh sách phòng chờ của host chỉ gồm các yêu cầu nhận được khi host đang ở trong phòng (backend chỉ đẩy sự kiện, không có API liệt kê).
-5. Gửi chat qua STOMP không có phản hồi lỗi: tin nhắn không được broadcast lại sau 4 giây sẽ báo "có thể chưa được gửi".
-6. Token LiveKit sống 10 phút và chỉ giữ trong bộ nhớ, nên tải lại trang trong phòng sẽ quay về màn hình vào phòng.
+1. **`end` và `end-session` đòi `X-Participant-Id` của host**, mà backend không có API trả lại giá trị này. FE chỉ có sau khi host gọi `/join` trên trình duyệt đó, nên đăng nhập ở máy khác thì nút "Kết thúc cuộc họp" ở trang chi tiết bị ẩn.
+2. Danh sách phòng chờ của host chỉ gồm các yêu cầu nhận được khi host đang ở trong phòng (backend chỉ đẩy sự kiện, không có API liệt kê).
+3. Gửi chat qua STOMP không có phản hồi lỗi: tin nhắn không được broadcast lại sau 4 giây sẽ báo "có thể chưa được gửi".
+4. Token LiveKit sống 10 phút và chỉ giữ trong bộ nhớ, nên tải lại trang trong phòng sẽ quay về màn hình vào phòng.
 
 ## Cấu trúc
 

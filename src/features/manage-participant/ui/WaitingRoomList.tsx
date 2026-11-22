@@ -29,7 +29,7 @@ export const WaitingRoomList = ({ hostParticipantId, requests }: WaitingRoomList
   return (
     <section aria-label={t('meetingRoom.waitingRoom')} className={styles.list}>
       <h3>
-        {t('meetingRoom.waitingRoom')} <span>{requests.length}</span>
+        {t('meetingRoom.waitingRoom')}
       </h3>
       {requests.map((request) => (
         <div className={styles.row} key={request.requestId}>

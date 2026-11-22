@@ -1,19 +1,26 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiRequest, apiRequestVoid } from '../../../shared/api/api-client'
 import { participantHeaders, userHeaders } from '../../../shared/api/http-client'
-import type { Invitation, MeetingResponse } from '../model/types'
+import type { Invitation, MeetingDetail, MeetingResponse, MyMeeting } from '../model/types'
 
 const path = (code: string) => `/meetings/${encodeURIComponent(code)}`
 
 export const meetingKeys = {
   all: ['meetings'] as const,
+  detail: (code: string) => [...meetingKeys.all, code, 'detail'] as const,
   invitations: (code: string) => [...meetingKeys.all, code, 'invitations'] as const,
+  mine: (userId: string) => [...meetingKeys.all, 'mine', userId] as const,
 }
 
 export type CreateMeetingInput = { displayName: string; title: string; userId: string }
 export type ScheduleMeetingInput = CreateMeetingInput & { scheduledEndAt: string; scheduledStartAt: string }
 type HostRequest = { code: string; participantId: string }
 type OwnerRequest = { code: string; userId: string }
+
+export const getMeeting = (code: string) => apiRequest<MeetingDetail>({ url: path(code) })
+
+export const listMyMeetings = (userId: string) =>
+  apiRequest<MyMeeting[]>({ headers: userHeaders(userId), url: '/meetings' })
 
 export const createMeeting = (data: CreateMeetingInput) =>
   apiRequest<MeetingResponse>({ data, method: 'POST', url: '/meetings' })
@@ -55,12 +62,34 @@ export const deleteInvitation = ({ code, invitationId, userId }: OwnerRequest & 
     url: `${path(code)}/invitations/${encodeURIComponent(invitationId)}`,
   })
 
-export const useCreateMeetingMutation = () => useMutation({ mutationFn: createMeeting })
-export const useScheduleMeetingMutation = () => useMutation({ mutationFn: scheduleMeeting })
-export const useRescheduleMeetingMutation = () => useMutation({ mutationFn: rescheduleMeeting })
-export const useCancelMeetingMutation = () => useMutation({ mutationFn: cancelMeeting })
-export const useEndMeetingMutation = () => useMutation({ mutationFn: endMeeting })
+const useMeetingMutation = <TInput, TResult>(mutationFn: (input: TInput) => Promise<TResult>) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: meetingKeys.all }),
+  })
+}
+
+export const useCreateMeetingMutation = () => useMeetingMutation(createMeeting)
+export const useScheduleMeetingMutation = () => useMeetingMutation(scheduleMeeting)
+export const useRescheduleMeetingMutation = () => useMeetingMutation(rescheduleMeeting)
+export const useCancelMeetingMutation = () => useMeetingMutation(cancelMeeting)
+export const useEndMeetingMutation = () => useMeetingMutation(endMeeting)
 export const useEndSessionMutation = () => useMutation({ mutationFn: endSession })
+
+export const useMeetingQuery = (code: string) =>
+  useQuery({
+    enabled: Boolean(code),
+    queryFn: () => getMeeting(code),
+    queryKey: meetingKeys.detail(code),
+  })
+
+export const useMyMeetingsQuery = (userId: string | undefined) =>
+  useQuery({
+    enabled: Boolean(userId),
+    queryFn: () => listMyMeetings(userId ?? ''),
+    queryKey: meetingKeys.mine(userId ?? ''),
+  })
 
 export const useInvitationsQuery = (code: string, userId: string | undefined) =>
   useQuery({

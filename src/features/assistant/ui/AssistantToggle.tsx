@@ -1,18 +1,19 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAppDispatch } from '../../../app/store'
+import { meetingKeys } from '../../../entities/meeting/api/meeting.api'
+import type { MeetingDetail } from '../../../entities/meeting/model/types'
 import { getApiError } from '../../../shared/api/api-error'
 import { ToggleRow } from '../../../shared/ui/toggle-row'
-import { useSetAssistantMutation } from '../api/assistant.api.ts'
-import { assistantSet } from '../model/assistant.slice.ts'
-import { useAssistantEnabled } from '../model/use-assistant-enabled.ts'
+import { useSetAssistantMutation } from '../api/assistant.api'
+import { useAssistantEnabled } from '../model/use-assistant-enabled'
 import styles from './AssistantToggle.module.scss'
 
 type AssistantToggleProps = { code: string; hostParticipantId: string }
 
 export const AssistantToggle = ({ code, hostParticipantId }: AssistantToggleProps) => {
   const { t } = useTranslation()
-  const dispatch = useAppDispatch()
+  const queryClient = useQueryClient()
   const enabled = useAssistantEnabled(code)
   const mutation = useSetAssistantMutation()
   const [error, setError] = useState<string>()
@@ -21,7 +22,9 @@ export const AssistantToggle = ({ code, hostParticipantId }: AssistantToggleProp
     setError(undefined)
     try {
       const result = await mutation.mutateAsync({ code, enabled: next, hostParticipantId })
-      dispatch(assistantSet({ code, enabled: result.enabled }))
+      queryClient.setQueryData<MeetingDetail>(meetingKeys.detail(code), (previous) =>
+        previous ? { ...previous, assistantEnabled: result.enabled } : previous,
+      )
     } catch (failure) {
       setError(getApiError(failure)?.message ?? t('assistant.errors.toggle'))
     }

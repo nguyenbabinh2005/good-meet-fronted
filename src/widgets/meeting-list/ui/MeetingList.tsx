@@ -1,12 +1,13 @@
 import { CalendarClock, Hash, Radio } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import type { StoredMeeting } from '../../../entities/meeting/model/my-meetings.slice'
+import type { MyMeeting } from '../../../entities/meeting/model/types'
 import { formatDateTime } from '../../../shared/lib/date-time'
+import styles from './MeetingList.module.scss'
 
 type MeetingListProps = {
   emptyLabel: string
-  meetings: StoredMeeting[]
+  meetings: MyMeeting[]
 }
 
 export const MeetingList = ({ emptyLabel, meetings }: MeetingListProps) => {
@@ -20,7 +21,12 @@ export const MeetingList = ({ emptyLabel, meetings }: MeetingListProps) => {
         <li className="meeting-list-row" key={meeting.publicCode}>
           <span className="available-room-hash">{meeting.status === 'ACTIVE' ? <Radio size={16} /> : <Hash size={16} />}</span>
           <div className="meeting-list-copy">
-            <strong>{meeting.title}</strong>
+            <div className={styles.titleRow}>
+              <strong>{meeting.title}</strong>
+              <span className={`${styles.relation} ${styles[meeting.relation]}`}>
+                {t(`meetings.relation.${meeting.relation}`)}
+              </span>
+            </div>
             <span>
               {meeting.scheduledStartAt ? (
                 <>

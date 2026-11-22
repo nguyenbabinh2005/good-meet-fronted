@@ -17,6 +17,7 @@ import { useEffect, useRef, useState, type SubmitEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAppSelector } from '../../app/store'
+import { useMyMeetingsQuery } from '../../entities/meeting/api/meeting.api'
 import { useCreateMeeting } from '../../features/create-meeting'
 import { normalizeMeetingCode, useEnterMeeting } from '../../features/join-meeting'
 import { Button } from '../../shared/ui/button'
@@ -27,7 +28,7 @@ const HomePage = () => {
   const location = useLocation()
   const { t } = useTranslation()
   const user = useAppSelector((state) => state.auth.user)
-  const myMeetings = useAppSelector((state) => state.myMeetings.items)
+  const myMeetings = useMyMeetingsQuery(user?.userId)
   const { create, isPending: isCreating } = useCreateMeeting()
   const { enter, errorKey, isPending: isJoining } = useEnterMeeting()
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -40,7 +41,7 @@ const HomePage = () => {
   const [requestError, setRequestError] = useState<string | null>(null)
   const isSubmitting = isCreating || isJoining
   const notice = (location.state as { notice?: string } | null)?.notice
-  const upcoming = filterMeetings([...myMeetings], 'UPCOMING').slice(0, 3)
+  const upcoming = filterMeetings([...(myMeetings.data ?? [])], 'UPCOMING').slice(0, 3)
 
   useEffect(
     () => () => {

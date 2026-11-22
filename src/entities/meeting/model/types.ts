@@ -17,6 +17,29 @@ export type Meeting = {
 
 export type MeetingResponse = Meeting & { participantId?: string }
 
+export type MeetingDetail = {
+  assistantEnabled: boolean
+  createdAt: string
+  notesEnabled: boolean
+  publicCode: string
+  scheduledEndAt: string | null
+  scheduledStartAt: string | null
+  status: MeetingStatus
+  title: string
+}
+
+export type MeetingRelation = 'HOST' | 'INVITED'
+
+export type MyMeeting = {
+  createdAt: string
+  publicCode: string
+  relation: MeetingRelation
+  scheduledEndAt: string | null
+  scheduledStartAt: string | null
+  status: MeetingStatus
+  title: string
+}
+
 export type MeetingJoin = {
   displayName: string
   mediaToken: string

@@ -1,7 +1,3 @@
-import { useAppSelector } from '../../../app/store'
+import { useMeetingQuery } from '../../../entities/meeting/api/meeting.api'
 
-export const useNotesEnabled = (code: string) =>
-  useAppSelector(
-    (state) =>
-      state.notes.byCode[code] ?? state.myMeetings.items.find((item) => item.publicCode === code)?.notesEnabled ?? false,
-  )
+export const useNotesEnabled = (code: string) => useMeetingQuery(code).data?.notesEnabled ?? false

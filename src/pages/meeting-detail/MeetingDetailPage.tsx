@@ -2,10 +2,9 @@ import { CalendarClock, Copy, Link2, Play, Power, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
-import { useAppDispatch, useAppSelector } from '../../app/store'
-import { useEndMeetingMutation } from '../../entities/meeting/api/meeting.api'
+import { useAppSelector } from '../../app/store'
+import { useEndMeetingMutation, useMeetingQuery, useMyMeetingsQuery } from '../../entities/meeting/api/meeting.api'
 import { isClosed, meetingLink } from '../../entities/meeting/model/meeting-status'
-import { meetingSaved } from '../../entities/meeting/model/my-meetings.slice'
 import { useEnterMeeting } from '../../features/join-meeting'
 import { InvitationsCard } from '../../features/manage-invitations'
 import { ScheduleMeetingForm, useManageSchedule } from '../../features/schedule-meeting'
@@ -19,9 +18,12 @@ const MeetingDetailPage = () => {
   const { meetingId = '' } = useParams()
   const code = meetingId.toLowerCase()
   const { i18n, t } = useTranslation()
-  const dispatch = useAppDispatch()
   const user = useAppSelector((state) => state.auth.user)
-  const meeting = useAppSelector((state) => state.myMeetings.items.find((item) => item.publicCode === code))
+  const hostParticipantId = useAppSelector((state) => state.hostParticipants.byCode[code])
+  const meetingQuery = useMeetingQuery(code)
+  const myMeetings = useMyMeetingsQuery(user?.userId)
+  const meeting = meetingQuery.data
+  const isHost = myMeetings.data?.some((item) => item.publicCode === code && item.relation === 'HOST') ?? false
   const { enter, errorKey, isPending: isEntering } = useEnterMeeting()
   const manage = useManageSchedule(code)
   const endMutation = useEndMeetingMutation()
@@ -29,6 +31,14 @@ const MeetingDetailPage = () => {
   const linkCopy = useCopyFeedback()
   const [rescheduling, setRescheduling] = useState(false)
   const [actionError, setActionError] = useState<string>()
+
+  if (meetingQuery.isPending) {
+    return (
+      <section className="page-card">
+        <p className="detail-hint">{t('meetingDetail.loading')}</p>
+      </section>
+    )
+  }
 
   if (!meeting) {
     return (
@@ -43,10 +53,9 @@ const MeetingDetailPage = () => {
     )
   }
 
-  const { participantId } = meeting
   const closed = isClosed(meeting.status)
   const scheduled = meeting.status === 'SCHEDULED'
-  const canManage = Boolean(user) && !closed
+  const canManage = isHost && !closed
 
   const run = async (action: () => Promise<unknown>, confirmKey?: string) => {
     setActionError(undefined)
@@ -97,7 +106,7 @@ const MeetingDetailPage = () => {
               onClick={() => void enter({ code: meeting.publicCode, displayName: user?.displayName ?? '' })}
             >
               <Play size={16} />
-              &nbsp;{scheduled ? t('meetingDetail.start') : t('meetingDetail.enter')}
+              &nbsp;{scheduled && isHost ? t('meetingDetail.start') : t('meetingDetail.enter')}
             </Button>
             {scheduled && canManage && (
               <>
@@ -115,12 +124,12 @@ const MeetingDetailPage = () => {
                 </Button>
               </>
             )}
-            {meeting.status === 'ACTIVE' && participantId && (
+            {canManage && meeting.status === 'ACTIVE' && hostParticipantId && (
               <Button
                 disabled={endMutation.isPending}
                 onClick={() =>
                   void run(
-                    async () => dispatch(meetingSaved(await endMutation.mutateAsync({ code, participantId }))),
+                    async () => endMutation.mutateAsync({ code, participantId: hostParticipantId }),
                     'meetingDetail.confirmEnd',
                   )
                 }
@@ -166,7 +175,7 @@ const MeetingDetailPage = () => {
       </div>
 
       {canManage && user && <InvitationsCard code={code} userId={user.userId} />}
-      {user && meeting.status !== 'SCHEDULED' && meeting.status !== 'CANCELLED' && (
+      {isHost && user && meeting.status !== 'SCHEDULED' && meeting.status !== 'CANCELLED' && (
         <MinutesCard code={code} userId={user.userId} />
       )}
     </section>

@@ -1,14 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import type { StoredMeeting } from '../../../entities/meeting/model/my-meetings.slice'
+import type { MyMeeting } from '../../../entities/meeting/model/types'
 import { filterMeetings } from './filter-meetings'
 
-const meeting = (publicCode: string, status: StoredMeeting['status'], start: string | null = null): StoredMeeting => ({
-  assistantEnabled: false,
-  captionsEnabled: false,
-  id: publicCode,
-  mediaRoomId: `room-${publicCode}`,
-  notesEnabled: false,
+const meeting = (publicCode: string, status: MyMeeting['status'], start: string | null = null): MyMeeting => ({
+  createdAt: '2026-10-01T00:00:00Z',
   publicCode,
+  relation: 'HOST',
   scheduledEndAt: null,
   scheduledStartAt: start,
   status,

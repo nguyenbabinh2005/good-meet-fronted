@@ -10,13 +10,6 @@
     margin: 0 0 8px;
     text-transform: uppercase;
   }
-
-  h3 span {
-    background: var(--color-primary);
-    border-radius: 999px;
-    color: white;
-    padding: 1px 7px;
-  }
 }
 
 .row {
@@ -70,7 +63,7 @@
 .admit {
   background: #ecfdf3;
   border-color: #abefc6;
-  color: #067647;
+  color: #000;
 
   &:hover:not(:disabled) {
     background: #d1fadf;
@@ -80,7 +73,7 @@
 .reject {
   background: #fff1f0;
   border-color: #fecdca;
-  color: #b42318;
+  color: #000;
 
   &:hover:not(:disabled) {
     background: #fee4e2;

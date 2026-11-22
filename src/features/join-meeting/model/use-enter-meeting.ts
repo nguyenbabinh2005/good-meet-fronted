@@ -1,9 +1,10 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../../app/store'
+import { meetingKeys } from '../../../entities/meeting/api/meeting.api'
+import { hostParticipantRemembered } from '../../../entities/meeting/model/host-participants.slice'
 import { meetingSessionEstablished } from '../../../entities/meeting/model/meeting-session.slice'
-import { hostJoined } from '../../../entities/meeting/model/my-meetings.slice'
 import { joinMeeting } from '../api/join.api'
 import { describeJoinError } from '../lib/join-error'
 import { normalizeMeetingCode } from '../lib/meeting-code'
@@ -13,6 +14,7 @@ import { joinRequestCreated } from './join-request.slice'
 export const useEnterMeeting = () => {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const userId = useAppSelector((state) => state.auth.user?.userId)
   const mutation = useMutation({ mutationFn: joinMeeting })
   const [errorKey, setErrorKey] = useState<string>()
@@ -25,8 +27,11 @@ export const useEnterMeeting = () => {
       if (outcome.kind === 'joined') {
         dispatch(meetingSessionEstablished(outcome.join))
         if (outcome.join.role === 'HOST') {
-          dispatch(hostJoined({ participantId: outcome.join.participantId, publicCode: outcome.join.publicCode }))
+          dispatch(
+            hostParticipantRemembered({ code: outcome.join.publicCode, participantId: outcome.join.participantId }),
+          )
         }
+        await queryClient.invalidateQueries({ queryKey: meetingKeys.all })
         await navigate(`/meetings/${encodeURIComponent(outcome.join.publicCode)}`)
         return
       }

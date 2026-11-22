@@ -1,0 +1,23 @@
+.titleRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.relation {
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  padding: 2px 8px;
+}
+
+.HOST {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.INVITED {
+  background: #f2f4f7;
+  color: #475467;
+}

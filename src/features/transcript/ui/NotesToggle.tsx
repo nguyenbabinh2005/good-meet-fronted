@@ -1,18 +1,19 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAppDispatch } from '../../../app/store'
+import { meetingKeys } from '../../../entities/meeting/api/meeting.api'
+import type { MeetingDetail } from '../../../entities/meeting/model/types'
 import { getApiError } from '../../../shared/api/api-error'
 import { ToggleRow } from '../../../shared/ui/toggle-row'
-import { useSetNotesMutation } from '../api/transcript.api.ts'
-import { notesSet } from '../model/notes.slice.ts'
-import { useNotesEnabled } from '../model/use-notes-enabled.ts'
+import { useSetNotesMutation } from '../api/transcript.api'
+import { useNotesEnabled } from '../model/use-notes-enabled'
 import styles from './NotesToggle.module.scss'
 
 type NotesToggleProps = { code: string; hostParticipantId: string }
 
 export const NotesToggle = ({ code, hostParticipantId }: NotesToggleProps) => {
   const { t } = useTranslation()
-  const dispatch = useAppDispatch()
+  const queryClient = useQueryClient()
   const enabled = useNotesEnabled(code)
   const mutation = useSetNotesMutation()
   const [error, setError] = useState<string>()
@@ -21,7 +22,9 @@ export const NotesToggle = ({ code, hostParticipantId }: NotesToggleProps) => {
     setError(undefined)
     try {
       const result = await mutation.mutateAsync({ code, enabled: next, hostParticipantId })
-      dispatch(notesSet({ code, enabled: result.enabled }))
+      queryClient.setQueryData<MeetingDetail>(meetingKeys.detail(code), (previous) =>
+        previous ? { ...previous, notesEnabled: result.enabled } : previous,
+      )
     } catch (failure) {
       setError(getApiError(failure)?.message ?? t('transcript.errors.toggle'))
     }

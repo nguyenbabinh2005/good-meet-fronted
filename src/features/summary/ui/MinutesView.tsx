@@ -1,10 +1,8 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { Sparkles } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getApiError } from '../../../shared/api/api-error'
 import { formatDateTime } from '../../../shared/lib/date-time'
-import { minutesQueryKey, useGenerateMinutesMutation, useMinutesHistoryQuery } from '../api/minutes.api.ts'
+import { useMinutesHistoryQuery } from '../api/minutes.api'
 import styles from './MinutesView.module.scss'
 
 type MinutesViewProps = { code: string; userId: string }
@@ -27,64 +25,31 @@ const Section = ({ items, title }: SectionProps) => {
 
 export const MinutesView = ({ code, userId }: MinutesViewProps) => {
   const { i18n, t } = useTranslation()
-  const queryClient = useQueryClient()
   const query = useMinutesHistoryQuery(code, userId)
-  const generateMutation = useGenerateMinutesMutation()
   const [selectedId, setSelectedId] = useState<string>()
-  const [error, setError] = useState<string>()
 
-  const versions = useMemo(() => [...(query.data ?? [])].sort((a, b) => b.version - a.version), [query.data])
-  const current = versions.find((item) => item.id === selectedId) ?? versions[0]
-
-  const generate = async () => {
-    setError(undefined)
-    try {
-      const created = await generateMutation.mutateAsync({ code, userId })
-      setSelectedId(created.id)
-      await queryClient.invalidateQueries({ queryKey: minutesQueryKey(code, userId) })
-    } catch (failure) {
-      const info = getApiError(failure)
-      setError(info?.status === 409 ? t('minutes.errors.noTranscript') : (info?.message ?? t('minutes.errors.generic')))
-    }
-  }
-
-  const generateLabel = generateMutation.isPending
-    ? t('minutes.generating')
-    : current
-      ? t('minutes.regenerate')
-      : t('minutes.generate')
+  const sessions = useMemo(
+    () => [...(query.data ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [query.data],
+  )
+  const current = sessions.find((item) => item.id === selectedId) ?? sessions[0]
 
   return (
     <div className={styles.view}>
-      <div className={styles.toolbar}>
-        {versions.length > 1 && (
+      {sessions.length > 1 && (
+        <div className={styles.toolbar}>
           <select
-            aria-label={t('minutes.version')}
+            aria-label={t('minutes.session')}
             onChange={(event) => setSelectedId(event.target.value)}
             value={current?.id}
           >
-            {versions.map((item) => (
+            {sessions.map((item) => (
               <option key={item.id} value={item.id}>
-                {t('minutes.versionLabel', { version: item.version })}
+                {formatDateTime(item.createdAt, i18n.language)}
               </option>
             ))}
           </select>
-        )}
-        <button
-          className={styles.generate}
-          disabled={generateMutation.isPending}
-          onClick={() => void generate()}
-          type="button"
-        >
-          <Sparkles size={14} />
-          {generateLabel}
-        </button>
-      </div>
-
-      {error && (
-        <p className={styles.error} role="alert">
-          {error}
-        </p>
+        </div>
       )}
 
       {query.isPending && <p className={styles.notice}>{t('minutes.loading')}</p>}

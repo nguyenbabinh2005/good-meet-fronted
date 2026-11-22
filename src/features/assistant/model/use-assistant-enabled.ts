@@ -1,9 +1,3 @@
-import { useAppSelector } from '../../../app/store'
+import { useMeetingQuery } from '../../../entities/meeting/api/meeting.api'
 
-export const useAssistantEnabled = (code: string) =>
-  useAppSelector(
-    (state) =>
-      state.assistant.byCode[code] ??
-      state.myMeetings.items.find((item) => item.publicCode === code)?.assistantEnabled ??
-      false,
-  )
+export const useAssistantEnabled = (code: string) => useMeetingQuery(code).data?.assistantEnabled ?? false

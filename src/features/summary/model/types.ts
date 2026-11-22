@@ -17,5 +17,4 @@ export type Minutes = {
   sessionId: string
   status: MinutesStatus
   summaryText: string | null
-  version: number
 }

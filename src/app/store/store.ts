@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit'
-import { meetingsLoaded } from '../../entities/meeting/model/my-meetings.slice'
-import { readMeetings } from '../../entities/meeting/model/my-meetings-storage'
+import { hostParticipantsLoaded } from '../../entities/meeting/model/host-participants.slice'
+import { readHostParticipants } from '../../entities/meeting/model/host-participants-storage'
 import { listenerMiddleware } from './listener-middleware'
 import { rootReducer } from './root-reducer'
 
@@ -9,10 +9,8 @@ export const store = configureStore({
   reducer: rootReducer,
 })
 
-// A returning visitor is already signed in (identity is restored from localStorage):
-// bring their meetings back too.
 const restoredUser = store.getState().auth.user
-if (restoredUser) store.dispatch(meetingsLoaded(readMeetings(restoredUser.userId)))
+if (restoredUser) store.dispatch(hostParticipantsLoaded(readHostParticipants(restoredUser.userId)))
 
 export type AppDispatch = typeof store.dispatch
 export type AppStore = typeof store

@@ -36,7 +36,6 @@ import { useEndMeetingMutation, useEndSessionMutation } from '../../entities/mee
 import { HandBadge } from '../../entities/participant/ui/HandBadge'
 import { meetingSessionCleared } from '../../entities/meeting/model/meeting-session.slice'
 import { meetingLink } from '../../entities/meeting/model/meeting-status'
-import { meetingSaved } from '../../entities/meeting/model/my-meetings.slice'
 import type { MeetingJoin } from '../../entities/meeting/model/types'
 import { BreakoutBanner, BreakoutPanel, useBreakoutSync, useRoomChanges } from '../../features/breakout'
 import { ChatPanel, useMeetingChat } from '../../features/meeting-chat'
@@ -252,11 +251,7 @@ const MeetingRoomContent = ({ chat, connectionError, session, waitingRequests }:
 
   const endMeeting = () =>
     hostAction(async () => {
-      dispatch(
-        meetingSaved(
-          await endMeetingMutation.mutateAsync({ code: session.publicCode, participantId: session.participantId }),
-        ),
-      )
+      await endMeetingMutation.mutateAsync({ code: session.publicCode, participantId: session.participantId })
     }, 'meetingRoom.confirmEndMeeting')
 
   const kickParticipant = async (participant: PanelParticipant) => {

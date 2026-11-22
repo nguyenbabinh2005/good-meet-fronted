@@ -22,6 +22,7 @@ const authenticationCopyKeys = {
     eyebrow: 'authentication.loginEyebrow',
     prompt: 'authentication.noAccount',
     submit: 'authentication.signIn',
+    switchLabel: 'authentication.signUp',
     switchPath: '/register',
     title: 'authentication.loginTitle',
   },
@@ -30,6 +31,7 @@ const authenticationCopyKeys = {
     eyebrow: 'authentication.registerEyebrow',
     prompt: 'authentication.haveAccount',
     submit: 'authentication.createAccount',
+    switchLabel: 'authentication.signIn',
     switchPath: '/login',
     title: 'authentication.registerTitle',
   },
@@ -121,10 +123,6 @@ export const AuthenticationForm = ({ mode }: { mode: AuthenticationMode }) => {
           <h1>{t('authentication.brandTitle')}</h1>
           <p>{t('authentication.brandDescription')}</p>
         </div>
-        <div className={styles.securityNote}>
-          <LockKeyhole aria-hidden="true" size={18} />
-          <span>{t('authentication.securityNote')}</span>
-        </div>
       </div>
 
       <div className={styles.formPanel}>
@@ -195,7 +193,7 @@ export const AuthenticationForm = ({ mode }: { mode: AuthenticationMode }) => {
 
         <p className={styles.switchMode}>
           {t(copyKeys.prompt)}{' '}
-          <Link to={{ pathname: copyKeys.switchPath, search: location.search }}>{t(copyKeys.submit)}</Link>
+          <Link to={{ pathname: copyKeys.switchPath, search: location.search }}>{t(copyKeys.switchLabel)}</Link>
         </p>
       </div>
     </section>
